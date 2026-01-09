@@ -3,7 +3,7 @@ import { CHAT_SYSTEM_INSTRUCTION } from "../constants";
 import { QuizRequestItem, QuizResult, Question, QuizType } from "../types";
 
 // NOTE: API Key must be provided by the environment
-const apiKey = process.env.API_KEY || ''; 
+const apiKey = process.env.GEMINI_API_KEY || ''; 
 
 const ai = new GoogleGenAI({ apiKey });
 
