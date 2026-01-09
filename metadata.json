@@ -1,0 +1,5 @@
+{
+  "name": "Trợ lý Vật lý THPT (AI Physics Assistant)-Ver12",
+  "description": "Ứng dụng hỗ trợ học tập Vật lý THPT theo chương trình GDPT 2018. Tích hợp AI Chat giải bài tập và tạo đề ôn tập tự động.",
+  "requestFramePermissions": []
+}
