@@ -98,7 +98,8 @@ const QuizGenerator: React.FC = () => {
       } else if (q.type === QuizType.TRUE_FALSE && q.options) {
         const labels = ['a', 'b', 'c', 'd'];
         q.options.forEach((opt, optIdx) => {
-          htmlContent += `<p>${labels[optIdx]}) ${processTextForWord(opt.trim())}</p>`;
+          const cleanOpt = opt.trim().replace(/^[a-dA-D][)\.]\s*/, '');
+          htmlContent += `<p>${labels[optIdx]}) ${processTextForWord(cleanOpt)}</p>`;
         });
         htmlContent += `<p style="margin-top:5px"><b>*Đáp án: ${processTextForWord(q.correctAnswer)}</b></p>`;
       } else if (q.type === QuizType.SHORT_ANSWER) {
@@ -295,10 +296,11 @@ const QuizGenerator: React.FC = () => {
                       <div className="tf-options">
                         {q.options.map((opt, i) => {
                           const labels = ['a', 'b', 'c', 'd'];
+                          const cleanOpt = opt.trim().replace(/^[a-dA-D][)\.]\s*/, '');
                           return (
                             <div key={i} className="tf-item">
                               <span className="tf-label">{labels[i]})</span>
-                              <MathMarkdown content={opt} />
+                              <MathMarkdown content={cleanOpt} />
                             </div>
                           );
                         })}
