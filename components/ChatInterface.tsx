@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types';
 import { sendChatMessage } from '../services/geminiService';
@@ -12,7 +11,7 @@ const ChatInterface: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatHistoryRef = useRef<Content[]>([]);
@@ -21,9 +20,7 @@ const ChatInterface: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -51,11 +48,8 @@ const ChatInterface: React.FC = () => {
         };
         reader.readAsDataURL(file);
       } else if (fileName.endsWith('.pdf') || fileName.endsWith('.docx')) {
-        // For PDF/DOCX in a real web environment, we would use libraries like pdf.js or mammoth.js
-        // Here we simulate extracting text or informing the AI about the file content
         setFileContent(`[Người dùng đã đính kèm tệp: ${file.name}]`);
         setSelectedImage(null);
-        // Note: In a production app, you'd extract the text here and append to inputText
       }
     }
   };
@@ -96,8 +90,6 @@ const ChatInterface: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     const tempImage = selectedImage;
-    
-    // Clear attachments
     setSelectedImage(null);
     setAttachedFileName(null);
     setFileContent(null);
@@ -105,30 +97,28 @@ const ChatInterface: React.FC = () => {
 
     try {
       const responseText = await sendChatMessage(chatHistoryRef.current, userMsg.text, userMsg.images);
-      
+
       const modelMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
         text: responseText,
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, modelMsg]);
 
-      const userParts = [];
+      const userParts: any[] = [];
       if (tempImage) {
         userParts.push({ inlineData: { mimeType: 'image/jpeg', data: tempImage } });
       }
       userParts.push({ text: userMsg.text });
       chatHistoryRef.current.push({ role: 'user', parts: userParts });
       chatHistoryRef.current.push({ role: 'model', parts: [{ text: responseText }] });
-
     } catch (error) {
       console.error("Chat error", error);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'model',
-        text: "Xin lỗi, đã có lỗi xảy ra khi xử lý tệp hoặc tin nhắn. Vui lòng thử lại.",
+        text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại.",
         timestamp: new Date()
       }]);
     } finally {
@@ -144,46 +134,35 @@ const ChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-lg border border-teal-100 overflow-hidden">
+    <div className="chat-container">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-teal-50/50">
+      <div className="chat-messages">
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[85%] md:max-w-[70%] rounded-2xl p-4 shadow-sm ${
-                msg.role === 'user'
-                  ? 'bg-teal-600 text-white rounded-br-none'
-                  : 'bg-white text-teal-900 border border-teal-100 rounded-bl-none'
-              }`}
-            >
+          <div key={msg.id} className={`msg-row ${msg.role === 'user' ? 'msg-row--user' : 'msg-row--model'}`}>
+            <div className={`msg-bubble ${msg.role === 'user' ? 'msg-bubble--user' : 'msg-bubble--model'}`}>
               {msg.images && msg.images.length > 0 && (
-                <div className="mb-2">
-                  <img 
-                    src={`data:image/jpeg;base64,${msg.images[0]}`} 
-                    alt="User uploaded" 
-                    className="max-h-64 rounded-lg border border-teal-200"
-                  />
+                <div style={{marginBottom:'0.5rem'}}>
+                  <img src={`data:image/jpeg;base64,${msg.images[0]}`} alt="User uploaded" className="msg-image" />
                 </div>
               )}
               <div className={msg.role === 'user' ? '' : 'tex2jax_process'}>
                 {msg.role === 'user' ? (
-                   <p className="whitespace-pre-wrap">{msg.text}</p>
+                  <p className="msg-text">{msg.text}</p>
                 ) : (
-                   <MathMarkdown content={msg.text} />
+                  <MathMarkdown content={msg.text} />
                 )}
               </div>
             </div>
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white p-4 rounded-2xl rounded-bl-none border border-teal-100 shadow-sm flex items-center space-x-2">
-              <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="msg-row msg-row--model">
+            <div className="msg-bubble msg-bubble--model">
+              <div className="loading-dots">
+                <div className="loading-dot"></div>
+                <div className="loading-dot"></div>
+                <div className="loading-dot"></div>
+              </div>
             </div>
           </div>
         )}
@@ -191,44 +170,28 @@ const ChatInterface: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-teal-100">
+      <div className="chat-input-area">
         {attachedFileName && (
-          <div className="flex items-center space-x-2 mb-2 p-2 bg-teal-50 rounded-lg inline-flex border border-teal-200">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-teal-600">
+          <div className="attachment-tag">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{width:16,height:16,color:'var(--teal-600)'}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94a3 3 0 114.243 4.243L8.567 17.822a1.5 1.5 0 01-2.122-2.122L15.3 6.812" />
             </svg>
-            <span className="text-sm text-teal-700 font-medium truncate max-w-[200px]">{attachedFileName}</span>
-            <button 
-              onClick={removeAttachment}
-              className="text-red-500 hover:text-red-700 font-bold px-1 transition-colors"
-              title="Gỡ bỏ"
-            >
-              ×
-            </button>
+            <span>{attachedFileName}</span>
+            <button onClick={removeAttachment} className="attachment-remove" title="Gỡ bỏ">×</button>
           </div>
         )}
-        
-        <div className="flex items-end space-x-2">
-          <div className="relative">
-             <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*,.pdf,.docx"
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
-              title="Đính kèm tệp (Ảnh, PDF, Word)"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+
+        <div className="chat-input-row">
+          <div>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,.pdf,.docx" className="hidden-input" />
+            <button onClick={() => fileInputRef.current?.click()} className="btn-attach" title="Đính kèm tệp (Ảnh, PDF, Word)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
             </button>
           </div>
 
-          <div className="flex-1 bg-teal-50 rounded-2xl p-2 border border-teal-200 focus-within:ring-2 focus-within:ring-teal-300 focus-within:border-transparent transition-all">
+          <div className="chat-textarea-wrap">
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
@@ -240,25 +203,24 @@ const ChatInterface: React.FC = () => {
                 }
               }}
               placeholder="Nhập câu hỏi, dán ảnh (Ctrl+V) hoặc đính kèm file..."
-              className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-32 text-slate-700 placeholder-teal-400"
+              className="chat-textarea"
               rows={1}
-              style={{ minHeight: '44px' }}
             />
           </div>
-          
+
           <button
             onClick={handleSendMessage}
             disabled={(!inputText.trim() && !selectedImage && !fileContent) || isLoading}
-            className="p-3 bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed shadow-md transition-all transform hover:scale-105"
+            className="btn-send"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />
             </svg>
           </button>
         </div>
-        <div className="text-center mt-2 flex justify-center items-center space-x-4">
-            <span className="text-[10px] text-teal-400 font-medium">Hỗ trợ: PDF, Word, JPEG, PNG, Clipboard</span>
-            <span className="text-[10px] text-teal-300 italic">Thầy Trần Minh Thuận</span>
+        <div className="chat-footer">
+          <span className="hint">Hỗ trợ: PDF, Word, JPEG, PNG, Clipboard</span>
+          <span className="author">Thầy Trần Minh Thuận</span>
         </div>
       </div>
     </div>
